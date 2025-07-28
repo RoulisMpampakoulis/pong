@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Face Pong Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    h1 {
+      margin: 10px;
+      text-shadow: 0 0 10px #000;
+    }
+
+    #gameCanvas {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    .avatar {
+      position: absolute;
+      top: 10px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      box-shadow: 0 0 10px rgba(255,255,255,0.8);
+      background-size: cover;
+      background-position: center;
+    }
+
+    .avatar1 {
+      left: 10px;
+    }
+
+    .avatar2 {
+      right: 10px;
+    }
+
+    #countdown {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 60px;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 0 0 15px #000;
+      z-index: 10;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🏓 Face Pong Game 🏓</h1>
+<div style="position: relative;">
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
+  <div id="countdown">3</div>
+  <div class="avatar avatar1" style="background-image: url('https://media.licdn.com/dms/image/v2/D5603AQF2Mxo__hFuTg/profile-displayphoto-crop_800_800/B56ZfQ6OpZGoAM-/0/1751556616198?e=1756339200&v=beta&t=aaUQKnSfBrEq41ob6ob-73v1QikQhEjUCF97WKgPdII');"></div>
+  <div class="avatar avatar2" style="background-image: url('https://media.licdn.com/dms/image/v2/C4D03AQHSMPD32qcL-Q/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1594858007083?e=1756339200&v=beta&t=NIgiF2IyBWQ-qd_ou059jr9E3sPk7-qD3s3wDQBU6xg');"></div>
+</div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const countdownEl = document.getElementById('countdown');
+
+  const paddleWidth = 15;
+  const paddleHeight = 100;
+  const ballSize = 20;
+
+  let player1 = { x: 20, y: 200, score: 0 };
+  let player2 = { x: canvas.width - 20 - paddleWidth, y: 200, score: 0 };
+  let ball = { x: canvas.width / 2, y: canvas.height / 2, vx: 5, vy: 3 };
+
+  let keys = {};
+  let gameStarted = false;
+
+  window.addEventListener('keydown', e => keys[e.key] = true);
+  window.addEventListener('keyup', e => keys[e.key] = false);
+
+  function drawPaddle(x, y) {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x, y, paddleWidth, paddleHeight);
+  }
+
+  function drawBall() {
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ballSize / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function resetBall() {
+    ball.x = canvas.width / 2;
+    ball.y = canvas.height / 2;
+    ball.vx = Math.random() > 0.5 ? 5 : -5;
+    ball.vy = (Math.random() * 6) - 3;
+  }
+
+  function increaseSpeed() {
+    ball.vx *= 1.05;
+    ball.vy *= 1.05;
+  }
+
+  function update() {
+    if (!gameStarted) return;
+
+    if (keys['w'] && player1.y > 0) player1.y -= 6;
+    if (keys['s'] && player1.y + paddleHeight < canvas.height) player1.y += 6;
+
+    if (keys['ArrowUp'] && player2.y > 0) player2.y -= 6;
+    if (keys['ArrowDown'] && player2.y + paddleHeight < canvas.height) player2.y += 6;
+
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    if (ball.y <= 0 || ball.y + ballSize >= canvas.height) ball.vy = -ball.vy;
+
+    if (
+      ball.x <= player1.x + paddleWidth &&
+      ball.y + ballSize / 2 >= player1.y &&
+      ball.y - ballSize / 2 <= player1.y + paddleHeight
+    ) {
+      ball.vx = Math.abs(ball.vx);
+      increaseSpeed();
+    }
+
+    if (
+      ball.x + ballSize >= player2.x &&
+      ball.y + ballSize / 2 >= player2.y &&
+      ball.y - ballSize / 2 <= player2.y + paddleHeight
+    ) {
+      ball.vx = -Math.abs(ball.vx);
+      increaseSpeed();
+    }
+
+    if (ball.x < 0) {
+      player2.score++;
+      resetBall();
+    }
+
+    if (ball.x > canvas.width) {
+      player1.score++;
+      resetBall();
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = 0; i < canvas.height; i += 30) {
+      ctx.fillStyle = '#ccc';
+      ctx.fillRect(canvas.width / 2 - 2, i, 4, 20);
+    }
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "32px Poppins";
+    ctx.fillText(`${player1.score}`, canvas.width / 2 - 60, 40);
+    ctx.fillText(`${player2.score}`, canvas.width / 2 + 40, 40);
+
+    drawPaddle(player1.x, player1.y);
+    drawPaddle(player2.x, player2.y);
+    drawBall();
+  }
+
+  function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Countdown function
+  function startCountdown() {
+    let count = 3;
+    countdownEl.textContent = count;
+
+    const countdownInterval = setInterval(() => {
+      count--;
+      if (count > 0) {
+        countdownEl.textContent = count;
+      } else if (count === 0) {
+        countdownEl.textContent = "GO!";
+      } else {
+        clearInterval(countdownInterval);
+        countdownEl.style.display = 'none';
+        gameStarted = true;
+      }
+    }, 1000);
+  }
+
+  resetBall();
+  startCountdown();
+  gameLoop();
+</script>
+
+</body>
+</html>
