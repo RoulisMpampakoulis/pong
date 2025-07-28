@@ -2,59 +2,80 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pong Game with Character Select</title>
+    <title>Pong with Character Selection</title>
     <style>
       body {
         margin: 0;
-        background-color: black;
         overflow: hidden;
-        font-family: sans-serif;
-      }
-      #character-select {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #111;
+        font-family: Arial, sans-serif;
+        background: black;
         color: white;
         display: flex;
-        flex-direction: column;
-        align-items: center;
         justify-content: center;
-        z-index: 10;
+        align-items: center;
+        height: 100vh;
+        flex-direction: column;
       }
-      #character-options {
+
+      canvas {
+        background: black;
+        display: block;
+        margin-top: 10px;
+      }
+
+      #selection {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        gap: 20px;
       }
+
       .character {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        margin: 10px;
         cursor: pointer;
+        border: 3px solid transparent;
+        border-radius: 8px;
+        transition: border 0.3s;
+        text-align: center;
       }
+
+      .character:hover {
+        border: 3px solid white;
+      }
+
       .character img {
-        width: 100px;
-        height: 100px;
+        width: 80px;
+        height: 80px;
         border-radius: 50%;
-        object-fit: cover;
       }
-      canvas {
+
+      .selected {
+        border: 3px solid limegreen;
+      }
+
+      #startBtn {
+        margin-top: 20px;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        display: none;
+      }
+
+      #timer {
+        font-size: 24px;
         display: none;
       }
     </style>
   </head>
   <body>
-    <div id="character-select">
-      <h2>Select Your Character</h2>
-      <div id="character-options"></div>
+    <div id="selection">
+      <h2>Select Player 1:</h2>
+      <div id="player1" class="select-grid"></div>
+      <h2>Select Player 2:</h2>
+      <div id="player2" class="select-grid"></div>
     </div>
-
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="timer">Game starts in <span id="countdown">3</span>...</div>
+    <canvas id="gameCanvas" width="800" height="600" style="display: none"></canvas>
+    <button id="startBtn">Start Game</button>
 
     <script>
       const people = [
@@ -76,128 +97,189 @@
         {
           name: "Brant",
           image:
-            "https://indd.adobe.com/content/2/deac4233-e2bf-459d-8226-c74c87d55e01/3505012381138/package/cover.jpeg",
+            "https://indd.adobe.com/content/2/deac4233-e2bf-459d-8226-c74c87d55e01/3505012381138/package/c94p/publication-web-resources/image/419.png",
+        },
+        {
+          name: "Hari",
+          image:
+            "https://media.licdn.com/dms/image/v2/D5603AQGSRDQImRvW5w/profile-displayphoto-shrink_800_800/B56ZbqCEe7GgAg-/0/1747683133712?e=1756339200&v=beta&t=217hEGIBBxkU1KpQ4cBvpXX_Fy3E8EZzjg6bIUp15kI",
+        },
+        {
+          name: "Devin(RIP)",
+          image:
+            "https://media.licdn.com/dms/image/v2/D5635AQGMeUiACOKbkw/profile-framedphoto-shrink_200_200/B56Zf7zCOaG0AY-/0/1752276149430?e=1754319600&v=beta&t=_WNsyO0VbPKhYypaYbHHMy-3vbFNk863KjfcIjBb6Dw",
+        },
+        {
+          name: "Brian",
+          image:
+            "https://indd.adobe.com/content/2/deac4233-e2bf-459d-8226-c74c87d55e01/3505012381138/package/c94p/publication-web-resources/image/169.png",
         },
       ];
 
-      const selectDiv = document.getElementById("character-select");
-      const optionsDiv = document.getElementById("character-options");
-      const canvas = document.getElementById("gameCanvas");
-      const ctx = canvas.getContext("2d");
-
-      let selectedPerson = null;
+      const player1Div = document.getElementById("player1");
+      const player2Div = document.getElementById("player2");
+      let selected1 = null;
+      let selected2 = null;
 
       people.forEach((person, index) => {
-        const charDiv = document.createElement("div");
-        charDiv.className = "character";
-        charDiv.innerHTML = `<img src="${person.image}" alt="${person.name}" /><span>${person.name}</span>`;
-        charDiv.onclick = () => startGame(index);
-        optionsDiv.appendChild(charDiv);
+        const div1 = createCharacterDiv(person, () => {
+          selected1 = person;
+          updateSelection("player1", selected1);
+          showStartIfReady();
+        });
+
+        const div2 = createCharacterDiv(person, () => {
+          selected2 = person;
+          updateSelection("player2", selected2);
+          showStartIfReady();
+        });
+
+        player1Div.appendChild(div1);
+        player2Div.appendChild(div2);
       });
 
-      function startGame(index) {
-        selectedPerson = people[index];
-        selectDiv.style.display = "none";
+      function createCharacterDiv(person, onClick) {
+        const div = document.createElement("div");
+        div.className = "character";
+        div.innerHTML = `<img src="${person.image}" /><br>${person.name}`;
+        div.onclick = () => {
+          onClick();
+        };
+        return div;
+      }
+
+      function updateSelection(containerId, selected) {
+        const container = document.getElementById(containerId);
+        Array.from(container.children).forEach((child) =>
+          child.classList.remove("selected")
+        );
+        Array.from(container.children).forEach((child) => {
+          if (child.innerText === selected.name) {
+            child.classList.add("selected");
+          }
+        });
+      }
+
+      function showStartIfReady() {
+        if (selected1 && selected2 && selected1.name !== selected2.name) {
+          document.getElementById("startBtn").style.display = "block";
+        }
+      }
+
+      document.getElementById("startBtn").onclick = () => {
+        document.getElementById("selection").style.display = "none";
+        document.getElementById("startBtn").style.display = "none";
+        document.getElementById("timer").style.display = "block";
+
+        let countdown = 3;
+        const countdownSpan = document.getElementById("countdown");
+        const interval = setInterval(() => {
+          countdown--;
+          countdownSpan.textContent = countdown;
+          if (countdown === 0) {
+            clearInterval(interval);
+            document.getElementById("timer").style.display = "none";
+            startGame();
+          }
+        }, 1000);
+      };
+
+      function startGame() {
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
         canvas.style.display = "block";
 
-        setTimeout(() => {
-          initGame();
-        }, 3000); // 3-second timer before game starts
-      }
+        let paddleHeight = 100;
+        let paddleWidth = 10;
+        let paddleSpeed = 10;
+        let ballSize = 10;
+        let ballX = canvas.width / 2;
+        let ballY = canvas.height / 2;
+        let ballSpeedX = 5;
+        let ballSpeedY = 5;
 
-      // Game logic
-      let paddleWidth = 10,
-        paddleHeight = 100,
-        playerY = 250,
-        aiY = 250,
-        ballX = 400,
-        ballY = 300,
-        ballVX = 5,
-        ballVY = 5,
-        paddleSpeed = 6;
+        let leftPaddleY = canvas.height / 2 - paddleHeight / 2;
+        let rightPaddleY = canvas.height / 2 - paddleHeight / 2;
 
-      function initGame() {
-        requestAnimationFrame(gameLoop);
-      }
+        let keys = {};
 
-      function gameLoop() {
-        update();
-        draw();
-        requestAnimationFrame(gameLoop);
-      }
+        document.addEventListener("keydown", (e) => {
+          keys[e.key] = true;
+        });
 
-      function update() {
-        // Move ball
-        ballX += ballVX;
-        ballY += ballVY;
+        document.addEventListener("keyup", (e) => {
+          keys[e.key] = false;
+        });
 
-        // Bounce top and bottom
-        if (ballY <= 0 || ballY >= canvas.height) ballVY *= -1;
+        function update() {
+          if (keys["w"] && leftPaddleY > 0) leftPaddleY -= paddleSpeed;
+          if (keys["s"] && leftPaddleY < canvas.height - paddleHeight)
+            leftPaddleY += paddleSpeed;
+          if (keys["ArrowUp"] && rightPaddleY > 0) rightPaddleY -= paddleSpeed;
+          if (
+            keys["ArrowDown"] &&
+            rightPaddleY < canvas.height - paddleHeight
+          )
+            rightPaddleY += paddleSpeed;
 
-        // Bounce off paddles and speed up slightly
-        if (
-          ballX <= paddleWidth &&
-          ballY >= playerY &&
-          ballY <= playerY + paddleHeight
-        ) {
-          ballVX *= -1.05;
+          ballX += ballSpeedX;
+          ballY += ballSpeedY;
+
+          // Wall collision
+          if (ballY <= 0 || ballY >= canvas.height - ballSize)
+            ballSpeedY = -ballSpeedY;
+
+          // Paddle collisions
+          if (
+            ballX <= paddleWidth &&
+            ballY > leftPaddleY &&
+            ballY < leftPaddleY + paddleHeight
+          ) {
+            ballSpeedX = -ballSpeedX * 1.05;
+          }
+
+          if (
+            ballX >= canvas.width - paddleWidth - ballSize &&
+            ballY > rightPaddleY &&
+            ballY < rightPaddleY + paddleHeight
+          ) {
+            ballSpeedX = -ballSpeedX * 1.05;
+          }
+
+          // Reset if out of bounds
+          if (ballX < 0 || ballX > canvas.width) {
+            ballX = canvas.width / 2;
+            ballY = canvas.height / 2;
+            ballSpeedX = 5 * (Math.random() > 0.5 ? 1 : -1);
+            ballSpeedY = 5 * (Math.random() > 0.5 ? 1 : -1);
+          }
         }
 
-        if (
-          ballX >= canvas.width - paddleWidth &&
-          ballY >= aiY &&
-          ballY <= aiY + paddleHeight
-        ) {
-          ballVX *= -1.05;
+        function draw() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          // Paddles
+          ctx.fillStyle = "white";
+          ctx.fillRect(0, leftPaddleY, paddleWidth, paddleHeight);
+          ctx.fillRect(
+            canvas.width - paddleWidth,
+            rightPaddleY,
+            paddleWidth,
+            paddleHeight
+          );
+
+          // Ball
+          ctx.fillRect(ballX, ballY, ballSize, ballSize);
         }
 
-        // Reset if ball goes out
-        if (ballX < 0 || ballX > canvas.width) {
-          ballX = 400;
-          ballY = 300;
-          ballVX = 5 * (Math.random() > 0.5 ? 1 : -1);
-          ballVY = 5;
+        function gameLoop() {
+          update();
+          draw();
+          requestAnimationFrame(gameLoop);
         }
 
-        // AI movement
-        if (aiY + paddleHeight / 2 < ballY) aiY += paddleSpeed;
-        else aiY -= paddleSpeed;
-
-        // Player controls
-        if (keys["ArrowUp"] && playerY > 0) playerY -= paddleSpeed;
-        if (keys["ArrowDown"] && playerY + paddleHeight < canvas.height)
-          playerY += paddleSpeed;
+        gameLoop();
       }
-
-      function draw() {
-        ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Draw paddles
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, playerY, paddleWidth, paddleHeight);
-        ctx.fillRect(canvas.width - paddleWidth, aiY, paddleWidth, paddleHeight);
-
-        // Draw ball
-        ctx.beginPath();
-        ctx.arc(ballX, ballY, 10, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Draw selected character
-        if (selectedPerson) {
-          const img = new Image();
-          img.src = selectedPerson.image;
-          img.onload = () => {
-            ctx.drawImage(img, 10, 10, 50, 50);
-            ctx.fillStyle = "white";
-            ctx.fillText(selectedPerson.name, 10, 75);
-          };
-        }
-      }
-
-      let keys = {};
-      document.addEventListener("keydown", (e) => (keys[e.key] = true));
-      document.addEventListener("keyup", (e) => (keys[e.key] = false));
     </script>
   </body>
 </html>
