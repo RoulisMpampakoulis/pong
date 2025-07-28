@@ -1,285 +1,218 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Pong with Character Selection</title>
-    <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-        font-family: Arial, sans-serif;
-        background: black;
-        color: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        flex-direction: column;
+<head>
+  <meta charset="UTF-8" />
+  <title>Face Pong Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    h1 {
+      margin: 10px;
+      text-shadow: 0 0 10px #000;
+    }
+
+    #gameCanvas {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    .avatar {
+      position: absolute;
+      top: 10px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      box-shadow: 0 0 10px rgba(255,255,255,0.8);
+      background-size: cover;
+      background-position: center;
+    }
+
+    .avatar1 {
+      left: 10px;
+    }
+
+    .avatar2 {
+      right: 10px;
+    }
+
+    #countdown {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 60px;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 0 0 15px #000;
+      z-index: 10;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🏓 Face Pong Game 🏓</h1>
+<div style="position: relative;">
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
+  <div id="countdown">3</div>
+  <div class="avatar avatar1" style="background-image: url('https://media.licdn.com/dms/image/v2/D5603AQF2Mxo__hFuTg/profile-displayphoto-crop_800_800/B56ZfQ6OpZGoAM-/0/1751556616198?e=1756339200&v=beta&t=aaUQKnSfBrEq41ob6ob-73v1QikQhEjUCF97WKgPdII');"></div>
+  <div class="avatar avatar2" style="background-image: url('https://media.licdn.com/dms/image/v2/C4D03AQHSMPD32qcL-Q/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1594858007083?e=1756339200&v=beta&t=NIgiF2IyBWQ-qd_ou059jr9E3sPk7-qD3s3wDQBU6xg');"></div>
+</div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const countdownEl = document.getElementById('countdown');
+
+  const paddleWidth = 15;
+  const paddleHeight = 100;
+  const ballSize = 20;
+
+  let player1 = { x: 20, y: 200, score: 0 };
+  let player2 = { x: canvas.width - 20 - paddleWidth, y: 200, score: 0 };
+  let ball = { x: canvas.width / 2, y: canvas.height / 2, vx: 5, vy: 3 };
+
+  let keys = {};
+  let gameStarted = false;
+
+  window.addEventListener('keydown', e => keys[e.key] = true);
+  window.addEventListener('keyup', e => keys[e.key] = false);
+
+  function drawPaddle(x, y) {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x, y, paddleWidth, paddleHeight);
+  }
+
+  function drawBall() {
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ballSize / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function resetBall() {
+    ball.x = canvas.width / 2;
+    ball.y = canvas.height / 2;
+    ball.vx = Math.random() > 0.5 ? 5 : -5;
+    ball.vy = (Math.random() * 6) - 3;
+  }
+
+  function increaseSpeed() {
+    ball.vx *= 1.05;
+    ball.vy *= 1.05;
+  }
+
+  function update() {
+    if (!gameStarted) return;
+
+    if (keys['w'] && player1.y > 0) player1.y -= 6;
+    if (keys['s'] && player1.y + paddleHeight < canvas.height) player1.y += 6;
+
+    if (keys['ArrowUp'] && player2.y > 0) player2.y -= 6;
+    if (keys['ArrowDown'] && player2.y + paddleHeight < canvas.height) player2.y += 6;
+
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    if (ball.y <= 0 || ball.y + ballSize >= canvas.height) ball.vy = -ball.vy;
+
+    if (
+      ball.x <= player1.x + paddleWidth &&
+      ball.y + ballSize / 2 >= player1.y &&
+      ball.y - ballSize / 2 <= player1.y + paddleHeight
+    ) {
+      ball.vx = Math.abs(ball.vx);
+      increaseSpeed();
+    }
+
+    if (
+      ball.x + ballSize >= player2.x &&
+      ball.y + ballSize / 2 >= player2.y &&
+      ball.y - ballSize / 2 <= player2.y + paddleHeight
+    ) {
+      ball.vx = -Math.abs(ball.vx);
+      increaseSpeed();
+    }
+
+    if (ball.x < 0) {
+      player2.score++;
+      resetBall();
+    }
+
+    if (ball.x > canvas.width) {
+      player1.score++;
+      resetBall();
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = 0; i < canvas.height; i += 30) {
+      ctx.fillStyle = '#ccc';
+      ctx.fillRect(canvas.width / 2 - 2, i, 4, 20);
+    }
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "32px Poppins";
+    ctx.fillText(`${player1.score}`, canvas.width / 2 - 60, 40);
+    ctx.fillText(`${player2.score}`, canvas.width / 2 + 40, 40);
+
+    drawPaddle(player1.x, player1.y);
+    drawPaddle(player2.x, player2.y);
+    drawBall();
+  }
+
+  function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Countdown function
+  function startCountdown() {
+    let count = 3;
+    countdownEl.textContent = count;
+
+    const countdownInterval = setInterval(() => {
+      count--;
+      if (count > 0) {
+        countdownEl.textContent = count;
+      } else if (count === 0) {
+        countdownEl.textContent = "GO!";
+      } else {
+        clearInterval(countdownInterval);
+        countdownEl.style.display = 'none';
+        gameStarted = true;
       }
+    }, 1000);
+  }
 
-      canvas {
-        background: black;
-        display: block;
-        margin-top: 10px;
-      }
+  resetBall();
+  startCountdown();
+  gameLoop();
+</script>
 
-      #selection {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-
-      .character {
-        margin: 10px;
-        cursor: pointer;
-        border: 3px solid transparent;
-        border-radius: 8px;
-        transition: border 0.3s;
-        text-align: center;
-      }
-
-      .character:hover {
-        border: 3px solid white;
-      }
-
-      .character img {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-      }
-
-      .selected {
-        border: 3px solid limegreen;
-      }
-
-      #startBtn {
-        margin-top: 20px;
-        padding: 10px 20px;
-        font-size: 16px;
-        cursor: pointer;
-        display: none;
-      }
-
-      #timer {
-        font-size: 24px;
-        display: none;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="selection">
-      <h2>Select Player 1:</h2>
-      <div id="player1" class="select-grid"></div>
-      <h2>Select Player 2:</h2>
-      <div id="player2" class="select-grid"></div>
-    </div>
-    <div id="timer">Game starts in <span id="countdown">3</span>...</div>
-    <canvas id="gameCanvas" width="800" height="600" style="display: none"></canvas>
-    <button id="startBtn">Start Game</button>
-
-    <script>
-      const people = [
-        {
-          name: "Jake",
-          image:
-            "https://media.licdn.com/dms/image/v2/D5603AQF2Mxo__hFuTg/profile-displayphoto-crop_800_800/B56ZfQ6OpZGoAM-/0/1751556616198?e=1756339200&v=beta&t=aaUQKnSfBrEq41ob6ob-73v1QikQhEjUCF97WKgPdII",
-        },
-        {
-          name: "Josh",
-          image:
-            "https://media.licdn.com/dms/image/v2/C4D03AQHSMPD32qcL-Q/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1594858007083?e=1756339200&v=beta&t=NIgiF2IyBWQ-qd_ou059jr9E3sPk7-qD3s3wDQBU6xg",
-        },
-        {
-          name: "Vinnie",
-          image:
-            "https://media.licdn.com/dms/image/v2/D5622AQEc-uaGSu04rw/feedshare-shrink_800/feedshare-shrink_800/0/1696256836883?e=2147483647&v=beta&t=8vkbVL0fN-gueUl9qTJJxrPe8kWL3VWpXxHblL6HUz8",
-        },
-        {
-          name: "Brant",
-          image:
-            "https://indd.adobe.com/content/2/deac4233-e2bf-459d-8226-c74c87d55e01/3505012381138/package/c94p/publication-web-resources/image/419.png",
-        },
-        {
-          name: "Hari",
-          image:
-            "https://media.licdn.com/dms/image/v2/D5603AQGSRDQImRvW5w/profile-displayphoto-shrink_800_800/B56ZbqCEe7GgAg-/0/1747683133712?e=1756339200&v=beta&t=217hEGIBBxkU1KpQ4cBvpXX_Fy3E8EZzjg6bIUp15kI",
-        },
-        {
-          name: "Devin(RIP)",
-          image:
-            "https://media.licdn.com/dms/image/v2/D5635AQGMeUiACOKbkw/profile-framedphoto-shrink_200_200/B56Zf7zCOaG0AY-/0/1752276149430?e=1754319600&v=beta&t=_WNsyO0VbPKhYypaYbHHMy-3vbFNk863KjfcIjBb6Dw",
-        },
-        {
-          name: "Brian",
-          image:
-            "https://indd.adobe.com/content/2/deac4233-e2bf-459d-8226-c74c87d55e01/3505012381138/package/c94p/publication-web-resources/image/169.png",
-        },
-      ];
-
-      const player1Div = document.getElementById("player1");
-      const player2Div = document.getElementById("player2");
-      let selected1 = null;
-      let selected2 = null;
-
-      people.forEach((person, index) => {
-        const div1 = createCharacterDiv(person, () => {
-          selected1 = person;
-          updateSelection("player1", selected1);
-          showStartIfReady();
-        });
-
-        const div2 = createCharacterDiv(person, () => {
-          selected2 = person;
-          updateSelection("player2", selected2);
-          showStartIfReady();
-        });
-
-        player1Div.appendChild(div1);
-        player2Div.appendChild(div2);
-      });
-
-      function createCharacterDiv(person, onClick) {
-        const div = document.createElement("div");
-        div.className = "character";
-        div.innerHTML = `<img src="${person.image}" /><br>${person.name}`;
-        div.onclick = () => {
-          onClick();
-        };
-        return div;
-      }
-
-      function updateSelection(containerId, selected) {
-        const container = document.getElementById(containerId);
-        Array.from(container.children).forEach((child) =>
-          child.classList.remove("selected")
-        );
-        Array.from(container.children).forEach((child) => {
-          if (child.innerText === selected.name) {
-            child.classList.add("selected");
-          }
-        });
-      }
-
-      function showStartIfReady() {
-        if (selected1 && selected2 && selected1.name !== selected2.name) {
-          document.getElementById("startBtn").style.display = "block";
-        }
-      }
-
-      document.getElementById("startBtn").onclick = () => {
-        document.getElementById("selection").style.display = "none";
-        document.getElementById("startBtn").style.display = "none";
-        document.getElementById("timer").style.display = "block";
-
-        let countdown = 3;
-        const countdownSpan = document.getElementById("countdown");
-        const interval = setInterval(() => {
-          countdown--;
-          countdownSpan.textContent = countdown;
-          if (countdown === 0) {
-            clearInterval(interval);
-            document.getElementById("timer").style.display = "none";
-            startGame();
-          }
-        }, 1000);
-      };
-
-      function startGame() {
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        canvas.style.display = "block";
-
-        let paddleHeight = 100;
-        let paddleWidth = 10;
-        let paddleSpeed = 10;
-        let ballSize = 10;
-        let ballX = canvas.width / 2;
-        let ballY = canvas.height / 2;
-        let ballSpeedX = 5;
-        let ballSpeedY = 5;
-
-        let leftPaddleY = canvas.height / 2 - paddleHeight / 2;
-        let rightPaddleY = canvas.height / 2 - paddleHeight / 2;
-
-        let keys = {};
-
-        document.addEventListener("keydown", (e) => {
-          keys[e.key] = true;
-        });
-
-        document.addEventListener("keyup", (e) => {
-          keys[e.key] = false;
-        });
-
-        function update() {
-          if (keys["w"] && leftPaddleY > 0) leftPaddleY -= paddleSpeed;
-          if (keys["s"] && leftPaddleY < canvas.height - paddleHeight)
-            leftPaddleY += paddleSpeed;
-          if (keys["ArrowUp"] && rightPaddleY > 0) rightPaddleY -= paddleSpeed;
-          if (
-            keys["ArrowDown"] &&
-            rightPaddleY < canvas.height - paddleHeight
-          )
-            rightPaddleY += paddleSpeed;
-
-          ballX += ballSpeedX;
-          ballY += ballSpeedY;
-
-          // Wall collision
-          if (ballY <= 0 || ballY >= canvas.height - ballSize)
-            ballSpeedY = -ballSpeedY;
-
-          // Paddle collisions
-          if (
-            ballX <= paddleWidth &&
-            ballY > leftPaddleY &&
-            ballY < leftPaddleY + paddleHeight
-          ) {
-            ballSpeedX = -ballSpeedX * 1.05;
-          }
-
-          if (
-            ballX >= canvas.width - paddleWidth - ballSize &&
-            ballY > rightPaddleY &&
-            ballY < rightPaddleY + paddleHeight
-          ) {
-            ballSpeedX = -ballSpeedX * 1.05;
-          }
-
-          // Reset if out of bounds
-          if (ballX < 0 || ballX > canvas.width) {
-            ballX = canvas.width / 2;
-            ballY = canvas.height / 2;
-            ballSpeedX = 5 * (Math.random() > 0.5 ? 1 : -1);
-            ballSpeedY = 5 * (Math.random() > 0.5 ? 1 : -1);
-          }
-        }
-
-        function draw() {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-          // Paddles
-          ctx.fillStyle = "white";
-          ctx.fillRect(0, leftPaddleY, paddleWidth, paddleHeight);
-          ctx.fillRect(
-            canvas.width - paddleWidth,
-            rightPaddleY,
-            paddleWidth,
-            paddleHeight
-          );
-
-          // Ball
-          ctx.fillRect(ballX, ballY, ballSize, ballSize);
-        }
-
-        function gameLoop() {
-          update();
-          draw();
-          requestAnimationFrame(gameLoop);
-        }
-
-        gameLoop();
-      }
-    </script>
-  </body>
+</body>
 </html>
