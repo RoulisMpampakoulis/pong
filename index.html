@@ -1,218 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Face Pong Game</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet" />
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      font-family: 'Poppins', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      color: #fff;
-      overflow: hidden;
-    }
-
-    h1 {
-      margin: 10px;
-      text-shadow: 0 0 10px #000;
-    }
-
-    #gameCanvas {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 15px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
-      position: relative;
-    }
-
-    canvas {
-      display: block;
-    }
-
-    .avatar {
-      position: absolute;
-      top: 10px;
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      border: 3px solid #fff;
-      box-shadow: 0 0 10px rgba(255,255,255,0.8);
-      background-size: cover;
-      background-position: center;
-    }
-
-    .avatar1 {
-      left: 10px;
-    }
-
-    .avatar2 {
-      right: 10px;
-    }
-
-    #countdown {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 60px;
-      font-weight: bold;
-      color: #fff;
-      text-shadow: 0 0 15px #000;
-      z-index: 10;
-      pointer-events: none;
-    }
-  </style>
-</head>
-<body>
-
-<h1>🏓 Face Pong Game 🏓</h1>
-<div style="position: relative;">
-  <canvas id="gameCanvas" width="800" height="500"></canvas>
-  <div id="countdown">3</div>
-  <div class="avatar avatar1" style="background-image: url('https://media.licdn.com/dms/image/v2/D5603AQF2Mxo__hFuTg/profile-displayphoto-crop_800_800/B56ZfQ6OpZGoAM-/0/1751556616198?e=1756339200&v=beta&t=aaUQKnSfBrEq41ob6ob-73v1QikQhEjUCF97WKgPdII');"></div>
-  <div class="avatar avatar2" style="background-image: url('https://media.licdn.com/dms/image/v2/C4D03AQHSMPD32qcL-Q/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1594858007083?e=1756339200&v=beta&t=NIgiF2IyBWQ-qd_ou059jr9E3sPk7-qD3s3wDQBU6xg');"></div>
-</div>
-
-<script>
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext('2d');
-  const countdownEl = document.getElementById('countdown');
-
-  const paddleWidth = 15;
-  const paddleHeight = 100;
-  const ballSize = 20;
-
-  let player1 = { x: 20, y: 200, score: 0 };
-  let player2 = { x: canvas.width - 20 - paddleWidth, y: 200, score: 0 };
-  let ball = { x: canvas.width / 2, y: canvas.height / 2, vx: 5, vy: 3 };
-
-  let keys = {};
-  let gameStarted = false;
-
-  window.addEventListener('keydown', e => keys[e.key] = true);
-  window.addEventListener('keyup', e => keys[e.key] = false);
-
-  function drawPaddle(x, y) {
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(x, y, paddleWidth, paddleHeight);
-  }
-
-  function drawBall() {
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(ball.x, ball.y, ballSize / 2, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  function resetBall() {
-    ball.x = canvas.width / 2;
-    ball.y = canvas.height / 2;
-    ball.vx = Math.random() > 0.5 ? 5 : -5;
-    ball.vy = (Math.random() * 6) - 3;
-  }
-
-  function increaseSpeed() {
-    ball.vx *= 1.05;
-    ball.vy *= 1.05;
-  }
-
-  function update() {
-    if (!gameStarted) return;
-
-    if (keys['w'] && player1.y > 0) player1.y -= 6;
-    if (keys['s'] && player1.y + paddleHeight < canvas.height) player1.y += 6;
-
-    if (keys['ArrowUp'] && player2.y > 0) player2.y -= 6;
-    if (keys['ArrowDown'] && player2.y + paddleHeight < canvas.height) player2.y += 6;
-
-    ball.x += ball.vx;
-    ball.y += ball.vy;
-
-    if (ball.y <= 0 || ball.y + ballSize >= canvas.height) ball.vy = -ball.vy;
-
-    if (
-      ball.x <= player1.x + paddleWidth &&
-      ball.y + ballSize / 2 >= player1.y &&
-      ball.y - ballSize / 2 <= player1.y + paddleHeight
-    ) {
-      ball.vx = Math.abs(ball.vx);
-      increaseSpeed();
-    }
-
-    if (
-      ball.x + ballSize >= player2.x &&
-      ball.y + ballSize / 2 >= player2.y &&
-      ball.y - ballSize / 2 <= player2.y + paddleHeight
-    ) {
-      ball.vx = -Math.abs(ball.vx);
-      increaseSpeed();
-    }
-
-    if (ball.x < 0) {
-      player2.score++;
-      resetBall();
-    }
-
-    if (ball.x > canvas.width) {
-      player1.score++;
-      resetBall();
-    }
-  }
-
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    for (let i = 0; i < canvas.height; i += 30) {
-      ctx.fillStyle = '#ccc';
-      ctx.fillRect(canvas.width / 2 - 2, i, 4, 20);
-    }
-
-    ctx.fillStyle = "#fff";
-    ctx.font = "32px Poppins";
-    ctx.fillText(`${player1.score}`, canvas.width / 2 - 60, 40);
-    ctx.fillText(`${player2.score}`, canvas.width / 2 + 40, 40);
-
-    drawPaddle(player1.x, player1.y);
-    drawPaddle(player2.x, player2.y);
-    drawBall();
-  }
-
-  function gameLoop() {
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
-  }
-
-  // Countdown function
-  function startCountdown() {
-    let count = 3;
-    countdownEl.textContent = count;
-
-    const countdownInterval = setInterval(() => {
-      count--;
-      if (count > 0) {
-        countdownEl.textContent = count;
-      } else if (count === 0) {
-        countdownEl.textContent = "GO!";
-      } else {
-        clearInterval(countdownInterval);
-        countdownEl.style.display = 'none';
-        gameStarted = true;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pong Game with Character Select</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: black;
+        overflow: hidden;
+        font-family: sans-serif;
       }
-    }, 1000);
-  }
+      #character-select {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #111;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+      }
+      #character-options {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+      }
+      .character {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+      }
+      .character img {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      canvas {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="character-select">
+      <h2>Select Your Character</h2>
+      <div id="character-options"></div>
+    </div>
 
-  resetBall();
-  startCountdown();
-  gameLoop();
-</script>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-</body>
+    <script>
+      const people = [
+        {
+          name: "Jake",
+          image:
+            "https://media.licdn.com/dms/image/v2/D5603AQF2Mxo__hFuTg/profile-displayphoto-crop_800_800/B56ZfQ6OpZGoAM-/0/1751556616198?e=1756339200&v=beta&t=aaUQKnSfBrEq41ob6ob-73v1QikQhEjUCF97WKgPdII",
+        },
+        {
+          name: "Josh",
+          image:
+            "https://media.licdn.com/dms/image/v2/C4D03AQHSMPD32qcL-Q/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1594858007083?e=1756339200&v=beta&t=NIgiF2IyBWQ-qd_ou059jr9E3sPk7-qD3s3wDQBU6xg",
+        },
+        {
+          name: "Vinnie",
+          image:
+            "https://media.licdn.com/dms/image/v2/D5622AQEc-uaGSu04rw/feedshare-shrink_800/feedshare-shrink_800/0/1696256836883?e=2147483647&v=beta&t=8vkbVL0fN-gueUl9qTJJxrPe8kWL3VWpXxHblL6HUz8",
+        },
+        {
+          name: "Brant",
+          image:
+            "https://indd.adobe.com/content/2/deac4233-e2bf-459d-8226-c74c87d55e01/3505012381138/package/cover.jpeg",
+        },
+      ];
+
+      const selectDiv = document.getElementById("character-select");
+      const optionsDiv = document.getElementById("character-options");
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+
+      let selectedPerson = null;
+
+      people.forEach((person, index) => {
+        const charDiv = document.createElement("div");
+        charDiv.className = "character";
+        charDiv.innerHTML = `<img src="${person.image}" alt="${person.name}" /><span>${person.name}</span>`;
+        charDiv.onclick = () => startGame(index);
+        optionsDiv.appendChild(charDiv);
+      });
+
+      function startGame(index) {
+        selectedPerson = people[index];
+        selectDiv.style.display = "none";
+        canvas.style.display = "block";
+
+        setTimeout(() => {
+          initGame();
+        }, 3000); // 3-second timer before game starts
+      }
+
+      // Game logic
+      let paddleWidth = 10,
+        paddleHeight = 100,
+        playerY = 250,
+        aiY = 250,
+        ballX = 400,
+        ballY = 300,
+        ballVX = 5,
+        ballVY = 5,
+        paddleSpeed = 6;
+
+      function initGame() {
+        requestAnimationFrame(gameLoop);
+      }
+
+      function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+      }
+
+      function update() {
+        // Move ball
+        ballX += ballVX;
+        ballY += ballVY;
+
+        // Bounce top and bottom
+        if (ballY <= 0 || ballY >= canvas.height) ballVY *= -1;
+
+        // Bounce off paddles and speed up slightly
+        if (
+          ballX <= paddleWidth &&
+          ballY >= playerY &&
+          ballY <= playerY + paddleHeight
+        ) {
+          ballVX *= -1.05;
+        }
+
+        if (
+          ballX >= canvas.width - paddleWidth &&
+          ballY >= aiY &&
+          ballY <= aiY + paddleHeight
+        ) {
+          ballVX *= -1.05;
+        }
+
+        // Reset if ball goes out
+        if (ballX < 0 || ballX > canvas.width) {
+          ballX = 400;
+          ballY = 300;
+          ballVX = 5 * (Math.random() > 0.5 ? 1 : -1);
+          ballVY = 5;
+        }
+
+        // AI movement
+        if (aiY + paddleHeight / 2 < ballY) aiY += paddleSpeed;
+        else aiY -= paddleSpeed;
+
+        // Player controls
+        if (keys["ArrowUp"] && playerY > 0) playerY -= paddleSpeed;
+        if (keys["ArrowDown"] && playerY + paddleHeight < canvas.height)
+          playerY += paddleSpeed;
+      }
+
+      function draw() {
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw paddles
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, playerY, paddleWidth, paddleHeight);
+        ctx.fillRect(canvas.width - paddleWidth, aiY, paddleWidth, paddleHeight);
+
+        // Draw ball
+        ctx.beginPath();
+        ctx.arc(ballX, ballY, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw selected character
+        if (selectedPerson) {
+          const img = new Image();
+          img.src = selectedPerson.image;
+          img.onload = () => {
+            ctx.drawImage(img, 10, 10, 50, 50);
+            ctx.fillStyle = "white";
+            ctx.fillText(selectedPerson.name, 10, 75);
+          };
+        }
+      }
+
+      let keys = {};
+      document.addEventListener("keydown", (e) => (keys[e.key] = true));
+      document.addEventListener("keyup", (e) => (keys[e.key] = false));
+    </script>
+  </body>
 </html>
