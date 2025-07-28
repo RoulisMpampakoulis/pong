@@ -68,19 +68,136 @@
       z-index: 10;
       pointer-events: none;
     }
+
+    #characterSelect {
+      background: rgba(0,0,0,0.7);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .character-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 800px;
+    }
+
+    .character {
+      margin: 10px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .character img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      transition: transform 0.2s;
+    }
+
+    .character img:hover {
+      transform: scale(1.1);
+    }
+
+    #selectTitle {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
 
 <h1>🏓 Face Pong Game 🏓</h1>
+
+<div id="characterSelect">
+  <div id="selectTitle">Select Player 1</div>
+  <div class="character-grid" id="characterGrid"></div>
+</div>
+
 <div style="position: relative;">
   <canvas id="gameCanvas" width="800" height="500"></canvas>
   <div id="countdown">3</div>
-  <div class="avatar avatar1" style="background-image: url('https://media.licdn.com/dms/image/v2/D5603AQF2Mxo__hFuTg/profile-displayphoto-crop_800_800/B56ZfQ6OpZGoAM-/0/1751556616198?e=1756339200&v=beta&t=aaUQKnSfBrEq41ob6ob-73v1QikQhEjUCF97WKgPdII');"></div>
-  <div class="avatar avatar2" style="background-image: url('https://media.licdn.com/dms/image/v2/C4D03AQHSMPD32qcL-Q/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1594858007083?e=1756339200&v=beta&t=NIgiF2IyBWQ-qd_ou059jr9E3sPk7-qD3s3wDQBU6xg');"></div>
+  <div class="avatar avatar1" id="avatar1"></div>
+  <div class="avatar avatar2" id="avatar2"></div>
 </div>
 
 <script>
+  const characters = [
+    {
+      name: "Jake",
+      image: "https://media.licdn.com/dms/image/v2/D5603AQF2Mxo__hFuTg/profile-displayphoto-crop_800_800/B56ZfQ6OpZGoAM-/0/1751556616198?e=1756339200&v=beta&t=aaUQKnSfBrEq41ob6ob-73v1QikQhEjUCF97WKgPdII",
+    },
+    {
+      name: "Josh",
+      image: "https://media.licdn.com/dms/image/v2/C4D03AQHSMPD32qcL-Q/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1594858007083?e=1756339200&v=beta&t=NIgiF2IyBWQ-qd_ou059jr9E3sPk7-qD3s3wDQBU6xg",
+    },
+    {
+      name: "Vinnie",
+      image: "https://media.licdn.com/dms/image/v2/D5622AQEc-uaGSu04rw/feedshare-shrink_800/feedshare-shrink_800/0/1696256836883?e=2147483647&v=beta&t=8vkbVL0fN-gueUl9qTJJxrPe8kWL3VWpXxHblL6HUz8",
+    },
+    {
+      name: "Brant",
+      image: "https://indd.adobe.com/content/2/deac4233-e2bf-459d-8226-c74c87d55e01/3505012381138/package/c94p/publication-web-resources/image/419.png",
+    },
+    {
+      name: "Hari",
+      image: "https://media.licdn.com/dms/image/v2/D5603AQGSRDQImRvW5w/profile-displayphoto-shrink_800_800/B56ZbqCEe7GgAg-/0/1747683133712?e=1756339200&v=beta&t=217hEGIBBxkU1KpQ4cBvpXX_Fy3E8EZzjg6bIUp15kI",
+    },
+    {
+      name: "Devin(RIP)",
+      image: "https://media.licdn.com/dms/image/v2/D5635AQGMeUiACOKbkw/profile-framedphoto-shrink_200_200/B56Zf7zCOaG0AY-/0/1752276149430?e=1754319600&v=beta&t=_WNsyO0VbPKhYypaYbHHMy-3vbFNk863KjfcIjBb6Dw",
+    },
+    {
+      name: "Brian",
+      image: "https://indd.adobe.com/content/2/deac4233-e2bf-459d-8226-c74c87d55e01/3505012381138/package/c94p/publication-web-resources/image/169.png",
+    },
+  ];
+
+  let selectedPlayers = [];
+  let selectingPlayer = 1;
+
+  const characterGrid = document.getElementById('characterGrid');
+  const characterSelect = document.getElementById('characterSelect');
+  const selectTitle = document.getElementById('selectTitle');
+  const avatar1 = document.getElementById('avatar1');
+  const avatar2 = document.getElementById('avatar2');
+
+  function renderCharacterOptions() {
+    characterGrid.innerHTML = '';
+    characters.forEach((person, index) => {
+      const div = document.createElement('div');
+      div.classList.add('character');
+      div.innerHTML = `<img src="${person.image}" alt="${person.name}" /><div>${person.name}</div>`;
+      div.addEventListener('click', () => {
+        if (selectedPlayers.includes(index)) return;
+
+        selectedPlayers.push(index);
+        if (selectedPlayers.length === 1) {
+          selectingPlayer = 2;
+          selectTitle.textContent = "Select Player 2";
+        } else {
+          avatar1.style.backgroundImage = `url('${characters[selectedPlayers[0]].image}')`;
+          avatar2.style.backgroundImage = `url('${characters[selectedPlayers[1]].image}')`;
+          characterSelect.style.display = 'none';
+          startCountdown();
+        }
+      });
+      characterGrid.appendChild(div);
+    });
+  }
+
+  renderCharacterOptions();
+
+  // === GAME CODE STARTS HERE ===
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
   const countdownEl = document.getElementById('countdown');
@@ -128,7 +245,6 @@
 
     if (keys['w'] && player1.y > 0) player1.y -= 6;
     if (keys['s'] && player1.y + paddleHeight < canvas.height) player1.y += 6;
-
     if (keys['ArrowUp'] && player2.y > 0) player2.y -= 6;
     if (keys['ArrowDown'] && player2.y + paddleHeight < canvas.height) player2.y += 6;
 
@@ -137,20 +253,12 @@
 
     if (ball.y <= 0 || ball.y + ballSize >= canvas.height) ball.vy = -ball.vy;
 
-    if (
-      ball.x <= player1.x + paddleWidth &&
-      ball.y + ballSize / 2 >= player1.y &&
-      ball.y - ballSize / 2 <= player1.y + paddleHeight
-    ) {
+    if (ball.x <= player1.x + paddleWidth && ball.y + ballSize / 2 >= player1.y && ball.y - ballSize / 2 <= player1.y + paddleHeight) {
       ball.vx = Math.abs(ball.vx);
       increaseSpeed();
     }
 
-    if (
-      ball.x + ballSize >= player2.x &&
-      ball.y + ballSize / 2 >= player2.y &&
-      ball.y - ballSize / 2 <= player2.y + paddleHeight
-    ) {
+    if (ball.x + ballSize >= player2.x && ball.y + ballSize / 2 >= player2.y && ball.y - ballSize / 2 <= player2.y + paddleHeight) {
       ball.vx = -Math.abs(ball.vx);
       increaseSpeed();
     }
@@ -190,7 +298,6 @@
     requestAnimationFrame(gameLoop);
   }
 
-  // Countdown function
   function startCountdown() {
     let count = 3;
     countdownEl.textContent = count;
@@ -210,7 +317,6 @@
   }
 
   resetBall();
-  startCountdown();
   gameLoop();
 </script>
 
